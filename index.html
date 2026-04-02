@@ -232,6 +232,17 @@ footer {
 }
 .footer-logo { font-weight: 700; color: var(--white); }
 
+/* قسم التعريف */
+.about-section{padding:40px 5%;border-bottom:1px solid var(--border-tertiary);background:rgba(255,255,255,0.01);}
+.about-inner{max-width:800px;margin:0 auto;}
+.about-tag{font-size:10px;font-weight:500;color:var(--red);letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;direction:ltr;}
+.about-text{font-family:var(--serif);font-size:18px;line-height:1.9;color:rgba(240,237,232,.75);margin-bottom:24px;}
+.about-stats{display:flex;gap:32px;flex-wrap:wrap;}
+.about-stat{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.stat-num{font-size:28px;font-weight:700;color:var(--white);font-family:var(--mono);}
+.stat-lbl{font-size:12px;color:var(--muted);}
+.footer-made{font-size:13px;color:var(--muted);}
+
 /* أنيميشن دخول */
 .fade-in { animation: fadeUp .5s ease both; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
@@ -255,6 +266,30 @@ footer {
     <a href="https://twitter.com/OffsecARE" dir="ltr" target="_blank">Twitter / X</a>
   </div>
 </nav>
+
+<!-- قسم التعريف -->
+<section class="about-section fade-in">
+  <div class="about-inner">
+    <div class="about-tag">عن OffsecAR</div>
+    <p class="about-text">
+      مجتمع عربي متخصص في الأمن الهجومي — ننشر يومياً أبرز الثغرات والتقنيات والأدوات التي يحتاجها كل مختص في Red Team وPenetration Testing. هدفنا تعزيز المحتوى العربي التقني العميق في مجال Offensive Security، وجعل المعرفة متاحة لكل عربي في هذا المجال.
+    </p>
+    <div class="about-stats">
+      <div class="about-stat">
+        <span class="stat-num">{{ site.posts | size }}</span>
+        <span class="stat-lbl">خبر</span>
+      </div>
+      <div class="about-stat">
+        <span class="stat-num">{{ site.blogs | size }}</span>
+        <span class="stat-lbl">مقالة</span>
+      </div>
+      <div class="about-stat">
+        <span class="stat-num">يومي</span>
+        <span class="stat-lbl">تحديث</span>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- هيرو: آخر منشور -->
 {% assign latest = site.posts.first %}
@@ -358,7 +393,7 @@ footer {
 
 <footer>
   <span class="footer-logo">OffsecAR</span>
-  <span>OffsecAR · تحديث تلقائي كل يوم</span>
+  <span class="footer-made">صُنع في السعودية 🇸🇦</span>
   <span dir="ltr">malekalthubiany.github.io/OffsecAR</span>
 </footer>
 
