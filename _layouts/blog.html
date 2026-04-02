@@ -24,6 +24,11 @@ nav{position:sticky;top:0;z-index:100;background:rgba(12,12,12,0.92);backdrop-fi
 .nav-links a.active{color:var(--red);}
 
 .article-wrap{max-width:720px;margin:0 auto;padding:56px 5% 80px;}
+.post-cover{background:#0d0d0d;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:40px 36px;margin-bottom:32px;position:relative;overflow:hidden;direction:rtl;}
+.post-cover::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--red);}
+.cover-cat{font-size:11px;font-weight:600;color:var(--red);border:1px solid rgba(224,60,42,0.4);border-radius:4px;padding:3px 9px;letter-spacing:.08em;}
+.cover-title{font-family:var(--serif);font-size:clamp(22px,2.5vw,34px);font-weight:700;color:#f0ede8;line-height:1.5;margin-top:16px;margin-bottom:16px;}
+.cover-line{width:50px;height:3px;background:var(--red);border-radius:2px;}
 .back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:32px;transition:color .2s;}
 .back-link:hover{color:var(--white);}
 .eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
@@ -64,12 +69,17 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
   <div class="nav-links">
     <a href="{{ site.baseurl }}/">الرئيسية</a>
     <a href="{{ site.baseurl }}/blogs" class="active">Blogs</a>
-    
+    <a href="{{ site.baseurl }}/ai-red-team">AI Red Team</a>
   </div>
 </nav>
 
 <article class="article-wrap">
   <a href="{{ site.baseurl }}/blogs" class="back-link">→ العودة للمدونة</a>
+  <div class="post-cover">
+    <span class="cover-cat">{{ page.category }}</span>
+    <h2 class="cover-title">{{ page.title }}</h2>
+    <div class="cover-line"></div>
+  </div>
 
   <div class="eyebrow">
     <span class="tag">{{ page.category }}</span>
@@ -77,13 +87,7 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
     <span class="read-meta">·</span>
     <span class="read-time">{{ page.read_time }} دقائق قراءة</span>
   </div>
-
-  {% if page.image %}
-  <div class="hero-image">
-    <img src="{{ page.image }}" alt="{{ page.title }}">
-  </div>
-  {% endif %}
-  <h1>{{ page.title }}</h1>
+<h1>{{ page.title }}</h1>
   <p class="excerpt">{{ page.excerpt }}</p>
 
   <div class="content">{{ content }}</div>
