@@ -1,6 +1,7 @@
 title: "OffsecAR"
 description: "أخبار Offensive Security يومياً بالعربي · OffsecAR"
 url: "https://malekalthubiany.github.io"
+repository: MalekAlthubiany/OffsecAR
 baseurl: "/OffsecAR"
 lang: ar
 direction: rtl
