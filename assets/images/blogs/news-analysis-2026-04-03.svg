@@ -26,9 +26,9 @@
   <text x="144" y="65" class="cat" text-anchor="middle">تحليل</text>
   
   <!-- العنوان -->
-  <text x="1140" y="280" class="title" text-anchor="end" direction="rtl">Web Shells الخفية: كيف تُسيطر</text>
-  <text x="1140" y="360" class="title" text-anchor="end" direction="rtl">الجهات المهاجمة على خوادم Linux</text>
-  <text x="1140" y="440" class="title" text-anchor="end" direction="rtl">باستخدام Cookies وتتفادى كشف الأنظمة الأمنية</text>
+  <text x="1140" y="280" class="title" text-anchor="end" direction="rtl">من Axios إلى سلسلة التوريد:</text>
+  <text x="1140" y="360" class="title" text-anchor="end" direction="rtl">كيف اخترق UNC1069 الكوري الشمالي</text>
+  <text x="1140" y="440" class="title" text-anchor="end" direction="rtl">ملايين المشاريع عبر الهندسة الاجتماعية المستهدفة</text>
   
   <!-- خط أحمر فاصل -->
   <rect x="54" y="500" width="80" height="4" fill="#9de84e" rx="2"/>

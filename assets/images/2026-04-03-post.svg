@@ -25,9 +25,9 @@
   <rect x="54" y="160" width="972" height="1" fill="#2a2a2a"/>
   
   <!-- العنوان -->
-  <text x="1010" y="260" class="title" text-anchor="end" direction="rtl">ثغرة RCE خطيرة في إضافة</text>
-  <text x="1010" y="340" class="title" text-anchor="end" direction="rtl">WordPress Backup Migration تتيح تنفيذ</text>
-  <text x="1010" y="420" class="title" text-anchor="end" direction="rtl">أوامر عن بُعد على ملايين المواقع</text>
+  <text x="1010" y="260" class="title" text-anchor="end" direction="rtl">ثغرة Remote Command Execution في</text>
+  <text x="1010" y="340" class="title" text-anchor="end" direction="rtl">إضافة WordPress Backup Migration تهدد</text>
+  <text x="1010" y="420" class="title" text-anchor="end" direction="rtl">ملايين المواقع</text>
   
   <!-- خط أحمر -->
   <rect x="54" y="480" width="60" height="4" fill="#e03c2a" rx="2"/>
