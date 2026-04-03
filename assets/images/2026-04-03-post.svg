@@ -25,9 +25,9 @@
   <rect x="54" y="160" width="972" height="1" fill="#2a2a2a"/>
   
   <!-- العنوان -->
-  <text x="1010" y="260" class="title" text-anchor="end" direction="rtl">ثغرة حرجة في Cisco IMC</text>
-  <text x="1010" y="340" class="title" text-anchor="end" direction="rtl">بتقييم 9.8 تتيح للمهاجمين اختراق</text>
-  <text x="1010" y="420" class="title" text-anchor="end" direction="rtl">الأنظمة عن بُعد دون مصادقة</text>
+  <text x="1010" y="260" class="title" text-anchor="end" direction="rtl">ثغرة RCE خطيرة في إضافة</text>
+  <text x="1010" y="340" class="title" text-anchor="end" direction="rtl">WordPress Backup Migration تتيح تنفيذ</text>
+  <text x="1010" y="420" class="title" text-anchor="end" direction="rtl">أوامر عن بُعد على ملايين المواقع</text>
   
   <!-- خط أحمر -->
   <rect x="54" y="480" width="60" height="4" fill="#e03c2a" rx="2"/>
@@ -35,12 +35,12 @@
   <!-- درجة الخطورة -->
   <rect x="54" y="920" width="260" height="44" rx="8" fill="#1a1a1a" stroke="#e03c2a" stroke-width="1"/>
   <circle cx="80" cy="942" r="7" fill="#e03c2a"/>
-  <text x="96" y="948" class="sev">خطورة حرجة  ·  CVSS 9.8</text>
+  <text x="96" y="948" class="sev">خطورة حرجة</text>
   
   <!-- فاصل سفلي -->
   <rect x="54" y="984" width="972" height="1" fill="#2a2a2a"/>
   
   <!-- الشعار والتاريخ -->
-  <text x="60" y="1012" class="brand">@OffsecARE</text>
+  <text x="60" y="1012" class="brand">@OffsecAR</text>
   <text x="1020" y="1012" class="brand" text-anchor="end">malekalthubiany.github.io/OffsecAR</text>
 </svg>
