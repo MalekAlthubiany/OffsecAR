@@ -1,13 +1,13 @@
 ---
 layout: none
-permalink: /ai-red-team/
+permalink: /ai-security/
 ---
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Red Team · OffsecAR</title>
+<title>الأمن الهجومي في الذكاء الاصطناعي · OffsecAR</title>
 <meta name="description" content="مقالات متخصصة في اختبار اختراق أنظمة الذكاء الاصطناعي">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&family=Noto+Sans+Arabic:wght@300;400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -64,15 +64,15 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
     <a href="/OffsecAR/">الرئيسية</a>
     <a href="/OffsecAR/news">الأخبار</a>
     <a href="/OffsecAR/blogs">Blogs</a>
-    <a href="/OffsecAR/ai-red-team" class="active">AI Red Team</a>
-    <a href="https://twitter.com/OffsecARE" dir="ltr" target="_blank">Twitter / X</a>
+    <a href="/OffsecAR/ai-security" class="active">الأمن الهجومي في الذكاء الاصطناعي</a>
+    <a href="https://twitter.com/OffsecAR" dir="ltr" target="_blank">Twitter / X</a>
   </div>
 </nav>
 
 <header class="page-header">
-  <div class="page-eyebrow">AI RED TEAM · أمن الذكاء الاصطناعي</div>
+  <div class="page-eyebrow">AI SECURITY · الأمن الهجومي في الذكاء الاصطناعي</div>
   <h1 class="page-title">اختراق <span>الذكاء الاصطناعي</span></h1>
-  <p class="page-desc">مقالات متخصصة في اختبار اختراق أنظمة الذكاء الاصطناعي — Prompt Injection، Jailbreaking، Model Extraction، وما هو أعمق.</p>
+  <p class="page-desc">مقالات يومية محدّثة من أحدث أخبار الإنترنت — منهجيات هجوم، أدوات، وثغرات في أنظمة الذكاء الاصطناعي. Prompt Injection، Jailbreaking، Model Extraction، وما هو أعمق.</p>
 </header>
 
 <div class="topics-bar">
@@ -85,7 +85,7 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
 </div>
 
 <div class="blogs-grid">
-  {% assign ai_posts = site.blogs | where: "category", "AI Red Team" | sort: "date" | reverse %}
+  {% assign ai_posts = site.blogs | where: "category", "الأمن الهجومي في الذكاء الاصطناعي" | sort: "date" | reverse %}
   <div class="grid-header">
     <span class="grid-title">AI RED TEAM POSTS</span>
     <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">{{ ai_posts | size }} مقالة</span>
@@ -98,7 +98,7 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
         <div class="blog-num">{{ forloop.index | prepend: "0" | slice: -2, 2 }}</div>
         <div>
           <div class="blog-meta">
-            <span class="blog-cat">AI Red Team</span>
+            <span class="blog-cat">الأمن الهجومي في الذكاء الاصطناعي</span>
             <span class="blog-date">{{ post.date | date: "%d %b %Y" }}</span>
             <span class="blog-date">· {{ post.read_time }} د</span>
           </div>
@@ -114,7 +114,7 @@ footer{border-top:1px solid var(--border);padding:28px 5%;display:flex;justify-c
       {% endfor %}
     {% else %}
       <div class="empty">
-        <p style="font-size:15px">مقالات AI Red Team تُنشر قريباً</p>
+        <p style="font-size:15px">مقالات الأمن الهجومي في الذكاء الاصطناعي تُنشر قريباً</p>
       </div>
     {% endif %}
   </div>
