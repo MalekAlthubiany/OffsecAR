@@ -155,7 +155,7 @@ def create_news_image_svg(headline: str, category: str, severity: str, cvss: str
   <rect x="54" y="984" width="972" height="1" fill="#2a2a2a"/>
   
   <!-- الشعار والتاريخ -->
-  <text x="60" y="1012" class="brand">@OffsecARE</text>
+  <text x="60" y="1012" class="brand">@OffsecAR</text>
   <text x="1020" y="1012" class="brand" text-anchor="end">malekalthubiany.github.io/OffsecAR</text>
 </svg>'''
 
