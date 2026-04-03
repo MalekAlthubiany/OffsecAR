@@ -58,16 +58,16 @@ GENERAL_TOPICS = [
 ]
 
 AI_RED_TEAM_TOPICS = [
-    {"title_hint": "AI Red Team: مهاجمة نماذج اللغة الكبيرة",        "category": "AI Red Team", "slug": "llm-attack-techniques"},
-    {"title_hint": "Jailbreaking: كسر قيود نماذج الذكاء الاصطناعي",  "category": "AI Red Team", "slug": "llm-jailbreaking"},
-    {"title_hint": "RAG Poisoning: تسميم قواعد المعرفة",              "category": "AI Red Team", "slug": "rag-poisoning"},
-    {"title_hint": "AI Agent Hijacking: اختطاف وكلاء الذكاء الاصطناعي", "category": "AI Red Team", "slug": "ai-agent-hijacking"},
-    {"title_hint": "Model Extraction: سرقة نماذج الذكاء الاصطناعي",   "category": "AI Red Team", "slug": "model-extraction"},
-    {"title_hint": "Adversarial Examples: خداع أنظمة الرؤية الاصطناعية", "category": "AI Red Team", "slug": "adversarial-examples"},
-    {"title_hint": "Prompt Injection في تطبيقات الإنتاج",             "category": "AI Red Team", "slug": "prompt-injection-production"},
-    {"title_hint": "LLM Fine-tuning Attacks: تلاعب بالنماذج",         "category": "AI Red Team", "slug": "llm-finetuning-attacks"},
-    {"title_hint": "AI Supply Chain: تسميم بيانات التدريب",           "category": "AI Red Team", "slug": "ai-supply-chain-poisoning"},
-    {"title_hint": "Multimodal Attacks: اختراق عبر الصور والصوت",     "category": "AI Red Team", "slug": "multimodal-attacks"},
+    {"title_hint": "AI Red Team: مهاجمة نماذج اللغة الكبيرة",        "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "llm-attack-techniques"},
+    {"title_hint": "Jailbreaking: كسر قيود نماذج الذكاء الاصطناعي",  "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "llm-jailbreaking"},
+    {"title_hint": "RAG Poisoning: تسميم قواعد المعرفة",              "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "rag-poisoning"},
+    {"title_hint": "AI Agent Hijacking: اختطاف وكلاء الذكاء الاصطناعي", "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "ai-agent-hijacking"},
+    {"title_hint": "Model Extraction: سرقة نماذج الذكاء الاصطناعي",   "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "model-extraction"},
+    {"title_hint": "Adversarial Examples: خداع أنظمة الرؤية الاصطناعية", "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "adversarial-examples"},
+    {"title_hint": "Prompt Injection في تطبيقات الإنتاج",             "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "prompt-injection-production"},
+    {"title_hint": "LLM Fine-tuning Attacks: تلاعب بالنماذج",         "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "llm-finetuning-attacks"},
+    {"title_hint": "AI Supply Chain: تسميم بيانات التدريب",           "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "ai-supply-chain-poisoning"},
+    {"title_hint": "Multimodal Attacks: اختراق عبر الصور والصوت",     "category": "الأمن الهجومي في الذكاء الاصطناعي", "slug": "multimodal-attacks"},
 ]
 
 NEWS_FEEDS = [
@@ -104,6 +104,69 @@ def fetch_latest_news() -> list[dict]:
         except Exception as e:
             print(f"   ⚠️ {url}: {e}")
     return items[:12]
+
+
+AI_NEWS_FEEDS = [
+    "https://feeds.feedburner.com/TheHackersNews",
+    "https://www.bleepingcomputer.com/feed/",
+    "https://portswigger.net/daily-swig/rss",
+]
+
+AI_KEYWORDS = ["AI", "LLM", "GPT", "Claude", "artificial intelligence", "machine learning",
+                "prompt injection", "jailbreak", "model", "chatbot", "OpenAI", "Anthropic",
+                "deepfake", "generative", "neural", "agent"]
+
+def fetch_ai_security_news() -> list[dict]:
+    """يجمع أخبار الأمن المتعلقة بالذكاء الاصطناعي"""
+    items = []
+    for url in AI_NEWS_FEEDS:
+        try:
+            feed = feedparser.parse(url)
+            for entry in feed.entries[:5]:
+                title = entry.get("title", "")
+                summary = entry.get("summary", entry.get("description", ""))
+                # فلتر أخبار الذكاء الاصطناعي
+                combined = (title + " " + summary).lower()
+                if any(kw.lower() in combined for kw in AI_KEYWORDS):
+                    items.append({
+                        "title":   title,
+                        "summary": summary[:500],
+                        "link":    entry.get("link", ""),
+                        "source":  feed.feed.get("title", ""),
+                    })
+        except Exception as e:
+            print(f"   ⚠️ {url}: {e}")
+    return items[:6]
+
+
+def generate_ai_security_post(news_items: list[dict], topic: dict) -> dict:
+    """يكتب مقالة عن الأمن الهجومي في الذكاء الاصطناعي مبنية على أخبار الإنترنت"""
+    news_json = json.dumps(news_items, ensure_ascii=False, indent=2)
+    prompt = f"""أنت خبير في أمن الذكاء الاصطناعي، تكتب بأسلوب ثمانية العربي الرصين.
+
+استناداً لهذه الأخبار الحديثة عن أمن الذكاء الاصطناعي:
+{news_json}
+
+اكتب مقالة متخصصة تجمع بين:
+- تحليل الأخبار من منظور الأمن الهجومي
+- شرح التقنيات والأدوات المذكورة
+- ربطها بموضوع: "{topic['title_hint']}"
+- توصيات عملية للمختصين
+
+المقالة يجب أن تكون محدّثة ومبنية على المستجدات الحقيقية.
+
+أرجع JSON فقط:
+{{
+  "title": "عنوان مشوق يعكس آخر المستجدات (15-20 كلمة)",
+  "excerpt": "مقدمة جذابة (3-4 جمل)",
+  "read_time": "وقت القراءة بالدقائق (رقم)",
+  "body": "المقالة الكاملة بصيغة Markdown، 700-1000 كلمة، 4-5 أقسام بـ ##",
+  "tags": ["تاق1", "تاق2", "تاق3"]
+}}"""
+    resp = client.messages.create(model="claude-sonnet-4-5", max_tokens=3000,
+                                   messages=[{"role": "user", "content": prompt}])
+    raw = re.sub(r"^```json\s*|```$", "", resp.content[0].text.strip(), flags=re.MULTILINE).strip()
+    return json.loads(raw)
 
 
 def generate_general_post(topic: dict) -> dict:
@@ -199,13 +262,18 @@ def main():
     except Exception as e:
         print(f"   ⚠️ {e}")
 
-    # ── ٢. مقالة AI Red Team ────────────────────────────────────────────
-    topic2 = pick_todays_ai_topic()
-    print(f"\n[2/3] AI Red Team — {topic2['title_hint']}")
+    # ── ٢. مقالة الأمن الهجومي في الذكاء الاصطناعي (من أخبار الإنترنت) ──
+    print(f"\n[2/3] الأمن الهجومي في الذكاء الاصطناعي — من أخبار الإنترنت")
     try:
-        content2 = generate_general_post(topic2)
+        ai_news = fetch_ai_security_news()
+        topic2 = pick_todays_ai_topic()
+        if ai_news:
+            content2 = generate_ai_security_post(ai_news, topic2)
+        else:
+            content2 = generate_general_post(topic2)
         print(f"   العنوان: {content2['title']}")
-        save_blog_post("AI Red Team", topic2['slug'], content2, offset_minutes=1)
+        slug2 = f"ai-security-{date_str}"
+        save_blog_post("الأمن الهجومي في الذكاء الاصطناعي", slug2, content2, offset_minutes=1)
     except Exception as e:
         print(f"   ⚠️ {e}")
 
