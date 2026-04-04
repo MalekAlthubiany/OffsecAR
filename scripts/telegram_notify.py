@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 """
 OffsecAR — مرسل التيليقرام
-يرسل يومياً محتوى جاهز للنسخ واللصق على تويتر ولينكدإن وواتساب
-مع صورة SVG ملخصة للخبر أو المقالة
+يرسل يومياً محتوى منسق وجاهز للنسخ واللصق
 """
 
-import os
-import json
-import requests
-import glob
+import os, re, requests
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -16,243 +12,203 @@ TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID   = os.environ["TELEGRAM_CHAT_ID"]
 POSTS_DIR  = Path("_posts")
 BLOGS_DIR  = Path("_blogs")
-IMAGES_DIR = Path("assets/images")
 SITE_URL   = "https://malekalthubiany.github.io/OffsecAR"
 
-def send_telegram_message(text: str):
-    """يرسل رسالة نصية"""
+
+def tg(text: str):
+    """يرسل رسالة تيليقرام"""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    resp = requests.post(url, json={
+    r = requests.post(url, json={
         "chat_id": TELEGRAM_CHAT_ID,
         "text": text,
         "parse_mode": "HTML",
-        "disable_web_page_preview": False,
+        "disable_web_page_preview": True,
     })
-    if not resp.ok:
-        print(f"⚠️ خطأ: {resp.text}")
-    return resp.ok
+    if not r.ok:
+        print(f"⚠️ {r.text[:200]}")
 
-def send_telegram_image(image_path: Path, caption: str):
-    """يرسل صورة مع نص"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto"
-    with open(image_path, "rb") as f:
-        resp = requests.post(url, data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "caption": caption[:1024],
-            "parse_mode": "HTML",
-        }, files={"photo": f})
-    if not resp.ok:
-        print(f"⚠️ خطأ في الصورة: {resp.text}")
-    return resp.ok
 
-def send_telegram_document(image_path: Path, caption: str = ""):
-    """يرسل ملف SVG كـ document"""
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
-    with open(image_path, "rb") as f:
-        resp = requests.post(url, data={
-            "chat_id": TELEGRAM_CHAT_ID,
-            "caption": caption[:1024],
-            "parse_mode": "HTML",
-        }, files={"document": f})
-    return resp.ok
-
-def parse_front_matter(file_path: Path) -> dict:
-    """يقرأ front matter من ملف Markdown"""
-    content = file_path.read_text(encoding="utf-8")
-    if not content.startswith("---"):
+def parse_fm(path: Path) -> dict:
+    """يقرأ front matter"""
+    raw = path.read_text(encoding="utf-8")
+    if not raw.startswith("---"):
         return {}
-    parts = content.split("---", 2)
+    parts = raw.split("---", 2)
     if len(parts) < 3:
         return {}
     fm = {}
     for line in parts[1].strip().split("\n"):
         if ":" in line:
-            key, _, val = line.partition(":")
-            fm[key.strip()] = val.strip().strip('"').strip("'")
+            k, _, v = line.partition(":")
+            fm[k.strip()] = v.strip().strip('"').strip("'")
     fm["_body"] = parts[2].strip()
     return fm
 
-def get_todays_files() -> tuple[list, list]:
-    """يجيب ملفات اليوم من _posts و _blogs"""
+
+def get_todays_files():
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     posts = sorted(POSTS_DIR.glob(f"{today}-*.md")) if POSTS_DIR.exists() else []
     blogs = sorted(BLOGS_DIR.glob(f"{today}-*.md")) if BLOGS_DIR.exists() else []
-    return posts, blogs
+    return posts, blogs, today
 
-def format_twitter_text(title: str, excerpt: str, url: str,
-                         category: str, severity: str = "", cvss: str = "") -> str:
-    """يصيغ نص التغريدة"""
-    sev_emoji = {"حرجة": "🔴", "عالية": "🟠", "متوسطة": "🟡"}.get(severity, "🔵")
-    lines = []
-    if severity and severity not in ("", "None"):
-        lines.append(f"{sev_emoji} {title}")
-        if cvss and cvss not in ("", "None"):
-            lines.append(f"CVSS: {cvss}")
-    else:
-        lines.append(f"📌 {title}")
-    lines.append("")
-    # اقتطع الملخص لـ 200 حرف
-    short = excerpt[:200] + "..." if len(excerpt) > 200 else excerpt
-    lines.append(short)
-    lines.append("")
-    lines.append(f"🔗 {url}")
-    lines.append("")
-    lines.append("#أمن_المعلومات #OffsecAR #RedTeam #Cybersecurity")
-    return "\n".join(lines)
 
-def format_linkedin_text(title: str, excerpt: str, url: str, category: str) -> str:
-    """يصيغ نص لينكدإن"""
-    return f"""📢 {title}
+def post_site_url(date_str: str, stem: str) -> str:
+    slug = stem[11:] if len(stem) > 11 else stem
+    y, m, d = date_str.split("-")
+    return f"{SITE_URL}/{y}/{m}/{d}/{slug}/"
 
-{excerpt[:400]}{"..." if len(excerpt) > 400 else ""}
 
-التصنيف: {category}
-🔗 اقرأ التحليل الكامل: {url}
+def blog_site_url(slug: str) -> str:
+    return f"{SITE_URL}/blogs/{slug}/"
 
----
-OffsecAR — أخبار الأمن الهجومي بالعربي يومياً
-#أمن_المعلومات #OffsecAR #CyberSecurity #RedTeam #OffensiveSecurity"""
 
-def format_whatsapp_text(title: str, excerpt: str, url: str) -> str:
-    """يصيغ نص واتساب"""
-    return f"""*{title}*
-
-{excerpt[:300]}{"..." if len(excerpt) > 300 else ""}
-
-📎 {url}
-
-_OffsecAR — يومية الأمن الهجومي بالعربي_"""
-
-def send_divider(label: str):
-    """يرسل فاصل بين المحتوى"""
-    send_telegram_message(f"{'─' * 20}\n<b>{label}</b>\n{'─' * 20}")
-
-def process_post(post_path: Path, index: int, total: int):
-    """يعالج ويرسل خبر واحد"""
-    fm = parse_front_matter(post_path)
-    if not fm:
-        return
-
-    title    = fm.get("title", "")
-    excerpt  = fm.get("_body", "")[:400]
-    category = fm.get("category", "")
-    severity = fm.get("severity", "")
-    cvss     = fm.get("cvss", "")
-    image    = fm.get("image", "")
-    date_str = fm.get("date", "")[:10]
-
-    # رابط الموقع
-    # اسم الملف مثل: 2026-04-05-offensec-2026-04-05
-    # رابط Jekyll: /2026/04/05/offensec-2026-04-05/
-    stem = post_path.stem  # بدون تاريخ البداية
-    slug = stem[11:] if len(stem) > 11 else stem  # أزل YYYY-MM-DD- من الأول
-    year, month, day = date_str.split("-")
-    post_url = f"{SITE_URL}/{year}/{month}/{day}/{slug}/"
+def send_news(fm: dict, date_str: str, stem: str, idx: int, total: int):
+    title      = fm.get("title", "")
+    category   = fm.get("category", "")
+    severity   = fm.get("severity", "")
+    cvss       = fm.get("cvss", "")
     source_url = fm.get("source_url", "")
+    source     = fm.get("source", "")
+    body       = fm.get("_body", "")
+    excerpt    = body[:350].replace("<", "&lt;").replace(">", "&gt;")
+    site_url   = post_site_url(date_str, stem)
 
-    # ── رسالة الرأس ──
+    sev_line = ""
+    if severity and severity not in ("", "None"):
+        sev_line = f"⚠️ خطورة {severity}"
+        if cvss and cvss not in ("", "None"):
+            sev_line += f"  ·  CVSS {cvss}"
+
+    # ── رسالة الخبر الكاملة ──
     msg = (
-        f"📰 <b>خبر {index}/{total}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📰 <b>خبر {idx}/{total}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"<b>{title}</b>\n\n"
-        f"📂 {category}"
-        + (f" | ⚠️ خطورة {severity}" if severity and severity != "None" else "")
-        + (f" | CVSS {cvss}" if cvss and cvss not in ("", "None") else "")
-        + f"\n\n"
-        + (f"🌐 <b>رابط المصدر الأصلي:</b> {source_url}\n" if source_url and source_url not in ("", "None") else "")
-        + f"🔗 <b>رابط موقعنا:</b> {post_url}"
+        f"🗂 {category}"
+        + (f"\n{sev_line}" if sev_line else "")
+        + f"\n\n{excerpt}{'...' if len(body) > 350 else ''}\n\n"
+        + (f"🌐 المصدر: {source_url}\n" if source_url and source_url not in ("", "None") else "")
+        + f"🔗 موقعنا: {site_url}"
     )
-    send_telegram_message(msg)
+    tg(msg)
 
-    # ── الصورة ──
-    if image:
-        img_path = Path(image.lstrip("/").replace("OffsecAR/", ""))
-        if img_path.exists():
-            send_telegram_document(img_path, caption=title[:200])
-
-    # ── نصوص النشر ──
-    tw  = format_twitter_text(title, excerpt, post_url, category, severity, cvss)
-    li  = format_linkedin_text(title, excerpt, post_url, category)
-    wa  = format_whatsapp_text(title, excerpt, post_url)
-
-    send_telegram_message(
-        f"🐦 <b>Twitter / X</b>\n<code>{tw}</code>"
+    # ── نص تويتر ──
+    sev_icon = {"حرجة": "🔴", "عالية": "🟠", "متوسطة": "🟡"}.get(severity, "🔵")
+    tw = (
+        f"{'🔴' if sev_line else '📌'} {title}\n\n"
+        + (f"{sev_line}\n\n" if sev_line else "")
+        + f"{body[:200]}...\n\n"
+        f"🔗 {site_url}\n\n"
+        f"#أمن_المعلومات #OffsecAR #RedTeam #Cybersecurity"
     )
-    send_telegram_message(
-        f"💼 <b>LinkedIn</b>\n<code>{li}</code>"
+    tg(f"🐦 <b>Twitter / X — انسخ والصق:</b>\n\n<code>{tw[:900]}</code>")
+
+    # ── نص لينكدإن ──
+    li = (
+        f"📢 {title}\n\n"
+        f"{body[:400]}{'...' if len(body) > 400 else ''}\n\n"
+        + (f"التصنيف: {category}\n" if category else "")
+        + f"🔗 التحليل الكامل: {site_url}\n\n"
+        f"OffsecAR — أخبار الأمن الهجومي بالعربي يومياً\n"
+        f"#أمن_المعلومات #OffsecAR #CyberSecurity #RedTeam"
     )
-    send_telegram_message(
-        f"💬 <b>WhatsApp</b>\n<code>{wa}</code>"
+    tg(f"💼 <b>LinkedIn — انسخ والصق:</b>\n\n<code>{li[:1000]}</code>")
+
+    # ── نص واتساب ──
+    wa = (
+        f"*{title}*\n\n"
+        f"{body[:300]}{'...' if len(body) > 300 else ''}\n\n"
+        f"📎 {site_url}\n\n"
+        f"_OffsecAR — يومية الأمن الهجومي بالعربي_"
     )
+    tg(f"💬 <b>WhatsApp — انسخ والصق:</b>\n\n<code>{wa[:800]}</code>")
 
-def process_blog(blog_path: Path, index: int, total: int):
-    """يعالج ويرسل مقالة واحدة"""
-    fm = parse_front_matter(blog_path)
-    if not fm:
-        return
 
-    title    = fm.get("title", "")
-    excerpt  = fm.get("excerpt", fm.get("_body", "")[:300])
-    category = fm.get("category", "")
-    read_time= fm.get("read_time", "")
-    image    = fm.get("image", "")
-    slug     = fm.get("slug", blog_path.stem)
+def send_blog(fm: dict, idx: int, total: int):
+    title     = fm.get("title", "")
+    category  = fm.get("category", "")
+    read_time = fm.get("read_time", "")
+    excerpt   = fm.get("excerpt", "")
+    slug      = fm.get("slug", "")
+    body      = fm.get("_body", "")
+    text      = excerpt if excerpt else body[:350]
+    site_url  = blog_site_url(slug)
 
-    blog_url = f"{SITE_URL}/blogs/{slug}/"
-
-    # ── رسالة الرأس ──
-    send_telegram_message(
-        f"📝 <b>مقالة {index}/{total}</b>\n"
+    # ── رسالة المقالة الكاملة ──
+    msg = (
+        f"━━━━━━━━━━━━━━━━━━━━\n"
+        f"📝 <b>مقالة {idx}/{total}</b>\n"
+        f"━━━━━━━━━━━━━━━━━━━━\n\n"
         f"<b>{title}</b>\n\n"
-        f"📂 {category}"
-        + (f" | ⏱ {read_time} دقائق" if read_time else "")
+        f"🗂 {category}"
+        + (f"  ·  ⏱ {read_time} دقائق" if read_time else "")
+        + f"\n\n{text[:400]}{'...' if len(text) > 400 else ''}\n\n"
+        f"🔗 {site_url}"
     )
+    tg(msg)
 
-    # ── الصورة ──
-    if image:
-        img_path = Path(image.lstrip("/").replace("OffsecAR/", ""))
-        if img_path.exists():
-            send_telegram_document(img_path, caption=title[:200])
+    # ── نص تويتر ──
+    tw = (
+        f"📌 {title}\n\n"
+        f"{text[:200]}...\n\n"
+        f"🔗 {site_url}\n\n"
+        f"#أمن_المعلومات #OffsecAR #RedTeam"
+    )
+    tg(f"🐦 <b>Twitter / X — انسخ والصق:</b>\n\n<code>{tw[:900]}</code>")
 
-    # ── نصوص النشر ──
-    tw = f"📌 {title}\n\n{excerpt[:200]}...\n\n🔗 {blog_url}\n\n#أمن_المعلومات #OffsecAR"
-    li = format_linkedin_text(title, excerpt, blog_url, category)
-    wa = format_whatsapp_text(title, excerpt, blog_url)
+    # ── نص لينكدإن ──
+    li = (
+        f"📢 {title}\n\n"
+        f"{text[:400]}{'...' if len(text) > 400 else ''}\n\n"
+        f"التصنيف: {category}\n"
+        f"🔗 اقرأ المقالة كاملة: {site_url}\n\n"
+        f"OffsecAR — أخبار الأمن الهجومي بالعربي يومياً\n"
+        f"#أمن_المعلومات #OffsecAR #CyberSecurity"
+    )
+    tg(f"💼 <b>LinkedIn — انسخ والصق:</b>\n\n<code>{li[:1000]}</code>")
 
-    send_telegram_message(f"🐦 <b>Twitter / X</b>\n<code>{tw}</code>")
-    send_telegram_message(f"💼 <b>LinkedIn</b>\n<code>{li}</code>")
-    send_telegram_message(f"💬 <b>WhatsApp</b>\n<code>{wa}</code>")
+    # ── نص واتساب ──
+    wa = (
+        f"*{title}*\n\n"
+        f"{text[:300]}{'...' if len(text) > 300 else ''}\n\n"
+        f"📎 {site_url}\n\n"
+        f"_OffsecAR — يومية الأمن الهجومي بالعربي_"
+    )
+    tg(f"💬 <b>WhatsApp — انسخ والصق:</b>\n\n<code>{wa[:800]}</code>")
 
 
 def main():
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    posts, blogs = get_todays_files()
+    posts, blogs, today = get_todays_files()
 
     if not posts and not blogs:
-        send_telegram_message(f"⚠️ لا يوجد محتوى جديد اليوم ({today})")
+        tg(f"⚠️ لا يوجد محتوى جديد اليوم ({today})")
         return
 
-    # ── رسالة ترحيب ──
-    send_telegram_message(
-        f"🌅 <b>OffsecAR · يومية {today}</b>\n\n"
-        f"📰 أخبار: {len(posts)}\n"
-        f"📝 مقالات: {len(blogs)}\n\n"
-        f"انسخ النصوص أدناه والصقها مباشرة 👇"
+    # ── رسالة الترحيب ──
+    tg(
+        f"🌅 <b>OffsecAR · {today}</b>\n\n"
+        f"📰 أخبار اليوم: {len(posts)}\n"
+        f"📝 مقالات اليوم: {len(blogs)}\n\n"
+        f"انسخ أي نص والصقه مباشرة 👇"
     )
 
     # ── الأخبار ──
     if posts:
-        send_divider("📰 أخبار اليوم")
-        for i, post in enumerate(posts, 1):
-            process_post(post, i, len(posts))
+        for i, p in enumerate(posts, 1):
+            fm = parse_fm(p)
+            if fm:
+                send_news(fm, today, p.stem, i, len(posts))
 
     # ── المقالات ──
     if blogs:
-        send_divider("📝 مقالات اليوم")
-        for i, blog in enumerate(blogs, 1):
-            process_blog(blog, i, len(blogs))
+        for i, b in enumerate(blogs, 1):
+            fm = parse_fm(b)
+            if fm:
+                send_blog(fm, i, len(blogs))
 
-    send_telegram_message(f"✅ <b>انتهى محتوى اليوم</b>\n🔗 {SITE_URL}")
-    print("✅ تم إرسال كل المحتوى للتيليقرام!")
+    tg(f"✅ <b>انتهى محتوى اليوم</b>\n🔗 {SITE_URL}")
+    print("✅ تم!")
 
 
 if __name__ == "__main__":
