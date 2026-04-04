@@ -30,7 +30,7 @@ jobs:
           sudo apt-get install -y fonts-noto-core fonts-noto-extra fonts-noto-ui-core libfreetype6-dev
 
       - name: تثبيت المكتبات
-        run: pip install --quiet anthropic feedparser Pillow requests arabic-reshaper python-bidi arabic-reshaper python-bidi
+        run: pip install --quiet anthropic feedparser Pillow requests
 
       - name: توليد خبر اليوم
         env:
@@ -49,6 +49,12 @@ jobs:
           git add _posts/ _blogs/ assets/images/
           git diff --staged --quiet || git commit -m "📰 $(date +'%Y-%m-%d') · خبر + 3 مقالات"
           git push
+
+      - name: إرسال المحتوى للتيليقرام
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID:   ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python scripts/telegram_notify.py
 
   deploy:
     needs: daily-post
