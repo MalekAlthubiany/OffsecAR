@@ -142,17 +142,26 @@ def process_post(post_path: Path, index: int, total: int):
     date_str = fm.get("date", "")[:10]
 
     # رابط الموقع
-    slug = post_path.stem
-    post_url = f"{SITE_URL}/{date_str.replace('-', '/')}/{slug}/"
+    # اسم الملف مثل: 2026-04-05-offensec-2026-04-05
+    # رابط Jekyll: /2026/04/05/offensec-2026-04-05/
+    stem = post_path.stem  # بدون تاريخ البداية
+    slug = stem[11:] if len(stem) > 11 else stem  # أزل YYYY-MM-DD- من الأول
+    year, month, day = date_str.split("-")
+    post_url = f"{SITE_URL}/{year}/{month}/{day}/{slug}/"
+    source_url = fm.get("source_url", "")
 
     # ── رسالة الرأس ──
-    send_telegram_message(
+    msg = (
         f"📰 <b>خبر {index}/{total}</b>\n"
         f"<b>{title}</b>\n\n"
         f"📂 {category}"
         + (f" | ⚠️ خطورة {severity}" if severity and severity != "None" else "")
         + (f" | CVSS {cvss}" if cvss and cvss not in ("", "None") else "")
+        + f"\n\n"
+        + (f"🌐 <b>رابط المصدر الأصلي:</b> {source_url}\n" if source_url and source_url not in ("", "None") else "")
+        + f"🔗 <b>رابط موقعنا:</b> {post_url}"
     )
+    send_telegram_message(msg)
 
     # ── الصورة ──
     if image:
