@@ -1,0 +1,172 @@
+---
+layout: none
+permalink: /about/
+---
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>من نحن · OffsecAR</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&family=Noto+Sans+Arabic:wght@300;400;500;700&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0c0c0c;--bg2:#141414;--red:#e03c2a;
+  --white:#f0ede8;--muted:#6b6b6b;--border:rgba(255,255,255,0.07);
+  --serif:'Noto Naskh Arabic',serif;--sans:'Noto Sans Arabic',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+body{background:var(--bg);color:var(--white);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+nav{position:sticky;top:0;z-index:100;background:rgba(12,12,12,0.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 6%;display:flex;align-items:center;justify-content:space-between;height:58px;}
+.nav-logo{font-weight:900;font-size:17px;display:flex;align-items:center;gap:9px;}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-links{display:flex;gap:24px;font-size:13px;color:var(--muted);}
+.nav-links a:hover{color:var(--white);}
+.nav-links a.active{color:var(--red);}
+
+.hero{max-width:860px;margin:0 auto;padding:72px 6% 56px;}
+.eyebrow{font-size:10px;font-weight:600;color:var(--red);letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px;direction:ltr;}
+.hero h1{font-family:var(--serif);font-size:clamp(34px,5vw,60px);font-weight:700;line-height:1.4;margin-bottom:24px;}
+.hero h1 em{font-style:normal;color:var(--red);}
+.divider{width:48px;height:3px;background:var(--red);border-radius:2px;margin-bottom:36px;}
+
+/* شرح اللوقو */
+.logo-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px 40px;margin:0 6% 64px;max-width:860px;margin-left:auto;margin-right:auto;}
+.logo-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;direction:ltr;margin-bottom:24px;}
+.logo-wrap{display:flex;align-items:center;gap:40px;flex-wrap:wrap;}
+.logo-symbol{flex-shrink:0;}
+.logo-desc{flex:1;min-width:260px;}
+.logo-item{display:flex;gap:16px;align-items:flex-start;margin-bottom:20px;}
+.logo-item:last-child{margin-bottom:0;}
+.logo-dot{width:10px;height:10px;border-radius:50%;background:var(--red);flex-shrink:0;margin-top:5px;}
+.logo-dot.empty{background:none;border:2px solid var(--red);}
+.logo-text h4{font-size:14px;font-weight:600;color:var(--white);margin-bottom:4px;}
+.logo-text p{font-size:13px;color:var(--muted);line-height:1.7;}
+
+/* قيمنا */
+.values{max-width:860px;margin:0 auto;padding:0 6% 64px;}
+.values-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-top:28px;}
+.val-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;}
+.val-card:hover{border-color:rgba(255,255,255,.12);}
+.val-num{font-family:var(--mono);font-size:11px;color:var(--red);margin-bottom:12px;direction:ltr;}
+.val-title{font-family:var(--serif);font-size:19px;font-weight:700;margin-bottom:8px;}
+.val-body{font-size:13px;color:var(--muted);line-height:1.8;}
+
+/* من نحن النص */
+.about-body{max-width:860px;margin:0 auto;padding:0 6% 80px;}
+.about-body p{font-family:var(--serif);font-size:19px;font-weight:400;color:rgba(240,237,232,.75);line-height:1.9;margin-bottom:24px;}
+.about-body p:last-child{margin-bottom:0;}
+
+footer{border-top:1px solid var(--border);padding:24px 6%;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);}
+.footer-logo{font-weight:900;font-size:15px;color:var(--white);}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/OffsecAR/" class="nav-logo">
+    <span class="nav-dot"></span>OffsecAR
+  </a>
+  <div class="nav-links">
+    <a href="/OffsecAR/">الرئيسية</a>
+    <a href="/OffsecAR/news">الأخبار</a>
+    <a href="/OffsecAR/blogs">مقالات</a>
+    <a href="/OffsecAR/ai-security">الأمن الهجومي في الذكاء الاصطناعي</a>
+    <a href="/OffsecAR/about" class="active">من نحن</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="eyebrow">ABOUT · من نحن</div>
+  <h1>نُثري الأمن الهجومي<br><em>بلغتنا العربية</em></h1>
+  <div class="divider"></div>
+</section>
+
+<!-- شرح اللوقو -->
+<div class="logo-section">
+  <div class="logo-title">رمزنا · THE SYMBOL</div>
+  <div class="logo-wrap">
+
+    <!-- اللوقو الحقيقي -->
+    <div class="logo-symbol">
+      <img src="/OffsecAR/assets/images/logo.png" width="110" height="110" alt="OffsecAR Logo" style="border-radius:8px;">
+    </div>
+
+    <div class="logo-desc">
+      <div class="logo-item">
+        <div class="logo-dot"></div>
+        <div class="logo-text">
+          <h4>الدائرة الحمراء — الأمن الهجومي</h4>
+          <p>الدائرة تمثل أي نظام مغلق — شبكة، تطبيق، أو بنية تحتية. اللون الأحمر يرمز للخطر والهجوم، وهو لوننا الأصيل في Offensive Security.</p>
+        </div>
+      </div>
+      <div class="logo-item">
+        <div class="logo-dot empty"></div>
+        <div class="logo-text">
+          <h4>الخط الفاصل — الاختراق</h4>
+          <p>الخط الرفيع الأسود الذي يشق الدائرة هو لحظة الاختراق — الثغرة التي تُقسّم النظام. لا يوجد نظام مثالي، وهذا الخط يذكّرنا بذلك دائماً.</p>
+        </div>
+      </div>
+      <div class="logo-item">
+        <div class="logo-dot" style="background:none;border:none;width:10px;height:10px;position:relative;display:flex;align-items:center;justify-content:center;">
+          <span style="width:2px;height:10px;background:var(--red);display:block;"></span>
+        </div>
+        <div class="logo-text">
+          <h4>القطعتان — ما قبل وما بعد</h4>
+          <p>الجزء الأكبر والأصغر يمثلان حالتي النظام — قبل الاختراق وبعده. مهمتنا تقليص هذا الفارق من خلال الوعي والمعرفة الهجومية.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- من نحن -->
+<div class="about-body">
+  <p>
+    OffsecAR مجتمع عربي متخصص في الأمن الهجومي — نؤمن بأن المعرفة التقنية العميقة يجب أن تكون متاحة بلغتنا العربية. ننشر يومياً أبرز الثغرات والتقنيات والأدوات التي يحتاجها كل مختص في Red Team وPenetration Testing.
+  </p>
+  <p>
+    نتجاوز الترجمة — نكتب بأسلوب عربي أصيل يخاطب المختص مباشرة. نلتقي بالمختصين ونحاورهم، ونحوّل تجاربهم الميدانية إلى مقالات تقنية تُثري المكتبة الأمنية العربية.
+  </p>
+  <p>
+    ندعم الشركات السعودية في قطاع الأمن السيبراني بلا مقابل — من خلال نشر أبحاثهم، وتسليط الضوء على أعمالهم، وتوفير منصة لمختصيهم للتعبير والمشاركة.
+  </p>
+</div>
+
+<!-- قيمنا -->
+<div class="values">
+  <div class="logo-title">ما نقدمه</div>
+  <div class="values-grid">
+    <div class="val-card">
+      <div class="val-num">01</div>
+      <div class="val-title">أخبار يومية</div>
+      <div class="val-body">أبرز ثغرات وهجمات اليوم — مُحللة ومكتوبة بأسلوب يخاطب المختص.</div>
+    </div>
+    <div class="val-card">
+      <div class="val-num">02</div>
+      <div class="val-title">مقالات تقنية</div>
+      <div class="val-body">منهجيات، أدوات، وتحليلات عميقة في Offensive Security وAI Red Team.</div>
+    </div>
+    <div class="val-card">
+      <div class="val-num">03</div>
+      <div class="val-title">ثغرات Bug Bounty</div>
+      <div class="val-body">ملخصات writeups من أبرز منصات مكافأة الثغرات — مع التحليل والسياق.</div>
+    </div>
+    <div class="val-card">
+      <div class="val-num">04</div>
+      <div class="val-title">دعم سعودي</div>
+      <div class="val-body">نسلط الضوء على الشركات والمختصين السعوديين في مجال الأمن السيبراني بلا مقابل.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <a href="/OffsecAR/" class="footer-logo">OffsecAR</a>
+  <span>صُنع في السعودية 🇸🇦</span>
+  <span style="direction:ltr;font-family:var(--mono);font-size:11px">malekalthubiany.github.io/OffsecAR</span>
+</footer>
+</body>
+</html>
