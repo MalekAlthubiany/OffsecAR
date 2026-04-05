@@ -195,6 +195,26 @@ footer {
 .fade-up { animation: fadeUp .5s ease both; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
 .d1{animation-delay:.05s} .d2{animation-delay:.1s} .d3{animation-delay:.15s}
+
+nav{position:sticky;top:0;z-index:100;background:rgba(12,12,12,0.96);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.07);padding:0 5%;display:flex;align-items:center;justify-content:space-between;height:56px;}
+.nav-logo{font-weight:900;font-size:16px;display:flex;align-items:center;gap:9px;color:#f0ede8;text-decoration:none;}
+.nav-links{display:flex;gap:22px;font-size:13px;}
+.nav-links a{color:#6b6b6b;text-decoration:none;transition:color .2s;}
+.nav-links a:hover,.nav-links a.active{color:#e03c2a;}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:#e03c2a;animation:blink 2s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.nav-burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:4px;}
+.nav-burger span{display:block;width:22px;height:2px;background:#6b6b6b;border-radius:2px;transition:all .25s;}
+.nav-burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.nav-burger.open span:nth-child(2){opacity:0;}
+.nav-burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+@media(max-width:768px){
+  .nav-burger{display:flex;}
+  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;background:#0c0c0c;border-bottom:1px solid rgba(255,255,255,0.07);flex-direction:column;gap:0;padding:8px 0;}
+  .nav-links.open{display:flex;}
+  .nav-links a{padding:12px 5%;font-size:15px;border-bottom:1px solid rgba(255,255,255,0.04);}
+  .nav-links a:last-child{border-bottom:none;}
+}
 </style>
 </head>
 <body>
@@ -202,8 +222,11 @@ footer {
 <nav>
   <a href="/OffsecAR/" class="nav-logo">
     <span class="nav-dot"></span>
-    OffsecAR
+    <span>OffsecAR</span>
   </a>
+  <button class="nav-burger" onclick="this.classList.toggle('open');document.querySelector('.nav-links').classList.toggle('open')" aria-label="menu">
+    <span></span><span></span><span></span>
+  </button>
   <div class="nav-links">
     <a href="/OffsecAR/" class="active">الرئيسية</a>
     <a href="/OffsecAR/news">الأخبار</a>
