@@ -67,11 +67,20 @@ def make_card(title, category, severity, cvss, excerpt, date_str, W, H, accent, 
     fh = gf(max(14, W//68))
     fm = gmono(max(13, W//76))
 
-    # تاق OffsecAR
+    # لوقو OffsecAR
+    logo_size = max(44, W//22)
+    logo_path = Path('/home/runner/work/OffsecAR/OffsecAR/assets/images/logo.png')
+    if not logo_path.exists():
+        logo_path = Path('assets/images/logo.png')
+    if logo_path.exists():
+        try:
+            logo = Image.open(logo_path).convert('RGBA').resize((logo_size, logo_size))
+            img.paste(logo, (P, P-6), logo)
+        except:
+            pass
     tag_w = max(110, W//9)
     tag_h = max(28, H//34)
-    d.rounded_rectangle([P, P-6, P+tag_w, P+tag_h], radius=4, outline=accent, width=1)
-    d.text((P + tag_w//2, P + tag_h//2), 'OffsecAR', font=fm, fill=accent, anchor='mm')
+    d.text((P + logo_size + 10, P + tag_h//2 - 6), 'OffsecAR', font=fm, fill=accent)
 
     # تصنيف يمين
     rtext(d, ar(category), fs, W-P, P+2, '#3a3a3a')
