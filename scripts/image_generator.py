@@ -29,7 +29,9 @@ def _build_html(title, category, severity, cvss, cve, desc, body_text,
     sev_color = '#b3261e' if severity in ('حرجة',) else '#d97c38' if severity == 'عالية' else '#888'
 
     # تحويل body_text إلى فقرات HTML
-    paragraphs = [p.strip() for p in body_text.split('\n') if p.strip()][:8]
+    if isinstance(body_text, list):
+        body_text = ' '.join(str(x) for x in body_text)
+    paragraphs = [p.strip() for p in str(body_text).split('\n') if p.strip()][:8]
     body_html = ''.join(
         f'<p style="margin-bottom:12px;font-size:18px;color:#444;line-height:1.7;">{p}</p>'
         for p in paragraphs
