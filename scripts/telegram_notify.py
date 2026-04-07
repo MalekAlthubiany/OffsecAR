@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""OffsecAR — تيليقرام: صورة + نص منشور كامل لكل منصة"""
+"""OffsecAR — تيليقرام: نفس المحتوى كاملاً مع الصورة"""
 
 import os, requests
 from pathlib import Path
 from datetime import datetime, timezone
-from image_generator import make_advisory, make_twitter
+from image_generator import make_advisory
 
 TELEGRAM_BOT_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 TELEGRAM_CHAT_ID   = os.environ["TELEGRAM_CHAT_ID"]
@@ -22,23 +22,26 @@ def tg(text: str):
               "parse_mode": "HTML", "disable_web_page_preview": True}
     )
 
-def tg_photo(img_path: Path, caption: str):
+def tg_photo(img_path: Path, caption: str = ""):
     if not img_path.exists():
-        tg(caption); return
+        return
     with open(img_path, "rb") as f:
         requests.post(
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendPhoto",
-            data={"chat_id": TELEGRAM_CHAT_ID, "caption": caption[:1024], "parse_mode": "HTML"},
+            data={"chat_id": TELEGRAM_CHAT_ID,
+                  "caption": caption[:1024] if caption else "",
+                  "parse_mode": "HTML"},
             files={"photo": f}
         )
 
-def tg_doc(img_path: Path, caption: str = ""):
-    """يرسل الصورة كـ document (بجودة كاملة)"""
-    if not img_path.exists(): return
+def tg_doc(img_path: Path):
+    """يرسل الصورة بجودة كاملة كـ document"""
+    if not img_path.exists():
+        return
     with open(img_path, "rb") as f:
         requests.post(
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument",
-            data={"chat_id": TELEGRAM_CHAT_ID, "caption": caption[:1024], "parse_mode": "HTML"},
+            data={"chat_id": TELEGRAM_CHAT_ID},
             files={"document": f}
         )
 
@@ -63,154 +66,74 @@ def get_todays_files():
 
 def post_url(date_str, stem):
     slug = stem[11:] if len(stem) > 11 else stem
-    y,m,d = date_str.split("-")
+    y, m, d = date_str.split("-")
     return f"{SITE_URL}/{y}/{m}/{d}/{slug}/"
 
-def blog_url(slug, filename_stem=""):
-    """يبني رابط المقالة — Jekyll يستخدم slug من front matter مباشرة"""
-    # Jekyll يستخدم الـ slug كـ permalink إن وُجد في front matter
-    s = slug.strip() if slug else ""
-    if not s and filename_stem:
-        # fallback: أزل التاريخ من اسم الملف
-        s = filename_stem[11:] if len(filename_stem) > 11 else filename_stem
-    return f"{SITE_URL}/blogs/{s}/" if s else SITE_URL
+def blog_url(slug):
+    return f"{SITE_URL}/blogs/{slug}/"
 
 
-
-def send_news(fm, date_str, stem, idx, total):
-    title      = fm.get("title","")
-    category   = fm.get("category","")
-    severity   = fm.get("severity","")
-    cvss       = fm.get("cvss","")
-    cve        = fm.get("cve","")
-    source_url = fm.get("source_url","")
-    body       = fm.get("_body","")
-    url        = post_url(date_str, stem)
+def send_item(title, category, severity, cvss, cve, body,
+              source_url, url, img_path, idx, total, kind="خبر"):
+    """يرسل عنصراً واحداً — صورة + نص Twitter + LinkedIn + WhatsApp"""
 
     # ── توليد الصورة ──
-    img = TMP / f"news_{idx}.png"
-    actions = [
-        'مراجعة الأنظمة المتأثرة فوراً',
-        'تطبيق التحديثات الأمنية المتاحة',
-        'مراقبة السجلات بحثاً عن نشاط مشبوه',
-        'عزل الأنظمة حتى اكتمال التحديث',
-    ]
-    excerpt = body[:300].replace('\n','  ')
+    sev_val = severity if severity and severity not in ("","None") else "غير محددة"
+    cvss_val = cvss if cvss and cvss not in ("","None") else ""
     try:
         make_advisory(
-            title, category, severity, cvss, cve,
-            excerpt, body,
+            title, category, sev_val, cvss_val, cve,
+            body[:300],  # وصف مختصر في الحقل المخصص
+            body,        # المحتوى الكامل في التفاصيل
             'آخر إصدار', 'تحديث فوري مطلوب',
-            'تنفيذ أوامر عن بعد', 'وصول غير مصرح',
+            'تنفيذ أوامر', 'وصول غير مصرح',
             'الشبكة', 'بدون مصادقة',
-            date_str, f"REF: OFFSEC-{date_str.replace('-','')}", img
-        )
-    except Exception as e:
-        print(f"   ⚠️ صورة: {e}")
-
-    # ── رسالة الفصل ──
-    tg(f"━━━━━━━━━━━━━━━━━━━━\n📰 <b>خبر {idx}/{total}</b>\n━━━━━━━━━━━━━━━━━━━━")
-
-    # ── Twitter/X — المنشور الكامل ──
-    sev_tag = f"🔴 خطورة {severity}" if severity and severity not in ("","None") else ""
-    cvss_tag = f"CVSS {cvss}" if cvss and cvss not in ("","None") else ""
-    tw_post = (
-        f"{title}\n\n"
-        + (f"{sev_tag}  {cvss_tag}\n\n" if sev_tag else "")
-        + f"{body[:350]}...\n\n"
-        + (f"المصدر: {source_url}\n" if source_url and source_url not in ("","None") else "")
-        + f"اقرأ التحليل: {url}\n\n"
-
-    )
-    tg_doc(img, f"<b>🐦 Twitter / X</b>")
-    tg(f"<b>🐦 نص التغريدة — انسخ والصق:</b>\n\n<code>{tw_post[:950]}</code>")
-
-    # ── LinkedIn — المنشور الكامل ──
-    li_post = (
-        f"🔐 {title}\n\n"
-        + (f"الخطورة: {severity}" + (f"  |  CVSS {cvss}" if cvss and cvss not in ("","None") else "") + "\n\n" if severity and severity not in ("","None") else "")
-        + f"{body[:600]}\n\n"
-        + "─────────────────\n"
-        + (f"📎 المصدر الأصلي: {source_url}\n" if source_url and source_url not in ("","None") else "")
-        + f"📖 التحليل الكامل: {url}\n\n"
-        f"OffsecAR — الأمن الهجومي بالعربي يومياً\n"
-
-    )
-    tg(f"<b>💼 نص LinkedIn — انسخ والصق:</b>\n\n<code>{li_post[:1000]}</code>")
-
-    # ── WhatsApp ──
-    wa_post = (
-        f"*{title}*\n\n"
-        + (f"{sev_tag}" + (f"  |  {cvss_tag}" if cvss_tag else "") + "\n\n" if sev_tag else "")
-        + body[:2000]
-        + (f"\n\nالمصدر: {source_url}" if source_url and source_url not in ("","None") else "")
-        + f"\n{url}"
-        + "\n\nOffsecAR"
-    )
-    tg(f"<b>💬 نص WhatsApp — انسخ والصق:</b>\n\n<code>{wa_post[:800]}</code>")
-
-
-def send_blog(fm, idx, total):
-    title     = fm.get("title","")
-    category  = fm.get("category","")
-    read_time = fm.get("read_time","")
-    body      = fm.get("_body","")
-    excerpt   = fm.get("excerpt", body[:300])
-    slug      = fm.get("slug","")
-    url       = blog_url(slug)  # slug من front matter أدق
-
-    # ── صورة ──
-    img = TMP / f"blog_{idx}.png"
-    actions = [
-        'قراءة المقالة كاملة على موقع OffsecAR',
-        'تطبيق التقنية في بيئة اختبار آمنة',
-        'مشاركة المعرفة مع فريقك',
-        'متابعتنا لمزيد من المحتوى اليومي',
-    ]
-    try:
-        make_advisory(
-            title, category, '', '', '',
-            excerpt[:300], actions,
-            'مقالة جديدة', 'متاحة الآن',
-            category, 'محتوى متخصص',
-            'موقع OffsecAR', 'مجاني',
             datetime.now(timezone.utc).strftime('%Y-%m-%d'),
-            f"REF: BLOG-{datetime.now(timezone.utc).strftime('%Y%m%d')}", img
+            f"OFFSEC-{datetime.now(timezone.utc).strftime('%Y%m%d')}",
+            img_path
         )
     except Exception as e:
         print(f"   ⚠️ صورة: {e}")
 
-    tg(f"━━━━━━━━━━━━━━━━━━━━\n📝 <b>مقالة {idx}/{total}</b>\n━━━━━━━━━━━━━━━━━━━━")
+    # ── فاصل ──
+    tg(f"━━━━━━━━━━━━━━━━━━━━\n"
+       f"{'📰' if kind == 'خبر' else '📝'} <b>{kind} {idx}/{total}</b>\n"
+       f"━━━━━━━━━━━━━━━━━━━━")
 
-    # Twitter
-    tw_post = (
-        f"📌 {title}\n\n"
-        f"{excerpt[:250]}...\n\n"
-        + (f"⏱ {read_time} دقائق قراءة\n\n" if read_time else "")
-        + f"🔗 {url}\n\n"
+    # ── ١. الصورة (جودة كاملة) ──
+    tg_doc(img_path)
 
+    # ── ٢. Twitter / X ──
+    tw = (
+        f"{title}\n\n"
+        + (f"الخطورة: {sev_val}" + (f"  |  CVSS {cvss_val}" if cvss_val else "") + "\n\n" if sev_val != "غير محددة" else "")
+        + body
+        + (f"\n\nالمصدر: {source_url}" if source_url and source_url not in ("","None") else "")
+        + f"\n\n{url}"
     )
-    tg_doc(img, f"<b>🐦 Twitter / X</b>")
-    tg(f"<b>🐦 نص التغريدة:</b>\n\n<code>{tw_post[:900]}</code>")
+    tg(f"<b>🐦 Twitter / X</b>\n\n<code>{tw[:4000]}</code>")
 
-    # LinkedIn
-    li_post = (
-        f"📢 {title}\n\n"
-        f"{body[:700]}\n\n"
-        + (f"⏱ وقت القراءة: {read_time} دقائق\n" if read_time else "")
-        + f"📖 اقرأ المقالة كاملة: {url}\n\n"
-        f"OffsecAR — الأمن الهجومي بالعربي\n"
-
+    # ── ٣. LinkedIn ──
+    li = (
+        f"{title}\n\n"
+        + (f"الخطورة: {sev_val}" + (f"  |  CVSS {cvss_val}" if cvss_val else "") + "\n\n" if sev_val != "غير محددة" else "")
+        + body
+        + (f"\n\nالمصدر: {source_url}" if source_url and source_url not in ("","None") else "")
+        + f"\n\n{url}"
+        + "\n\nOffsecAR — الأمن الهجومي بالعربي"
     )
-    tg(f"<b>💼 نص LinkedIn:</b>\n\n<code>{li_post[:1000]}</code>")
+    tg(f"<b>💼 LinkedIn</b>\n\n<code>{li[:4000]}</code>")
 
-    wa_post = (
+    # ── ٤. WhatsApp ──
+    wa = (
         f"*{title}*\n\n"
-        + body[:2000]
+        + (f"الخطورة: {sev_val}" + (f"  |  CVSS {cvss_val}" if cvss_val else "") + "\n\n" if sev_val != "غير محددة" else "")
+        + body
+        + (f"\n\nالمصدر: {source_url}" if source_url and source_url not in ("","None") else "")
         + f"\n\n{url}"
         + "\n\nOffsecAR"
     )
-    tg(f"<b>💬 نص WhatsApp:</b>\n\n<code>{wa_post[:800]}</code>")
+    tg(f"<b>💬 WhatsApp</b>\n\n<code>{wa[:4000]}</code>")
 
 
 def main():
@@ -220,26 +143,46 @@ def main():
         tg(f"⚠️ لا يوجد محتوى جديد اليوم ({today})")
         return
 
-    tg(
-        f"🌅 <b>OffsecAR · {today}</b>\n\n"
-        f"📰 أخبار: {len(posts)}  |  📝 مقالات: {len(blogs)}\n\n"
-        f"كل عنصر يأتي مع:\n"
-        f"• صورة تنبيه أمني جاهزة\n"
-        f"• نص Twitter كامل\n"
-        f"• نص LinkedIn كامل\n"
-        f"• نص WhatsApp كامل"
-    )
+    tg(f"🌅 <b>OffsecAR · {today}</b>\n\n"
+       f"📰 أخبار: {len(posts)}  |  📝 مقالات: {len(blogs)}")
 
     for i, p in enumerate(posts, 1):
         fm = parse_fm(p)
-        if fm: send_news(fm, today, p.stem, i, len(posts))
+        if not fm: continue
+        img = TMP / f"news_{i}.png"
+        send_item(
+            title      = fm.get("title",""),
+            category   = fm.get("category",""),
+            severity   = fm.get("severity",""),
+            cvss       = fm.get("cvss",""),
+            cve        = fm.get("cve",""),
+            body       = fm.get("_body",""),
+            source_url = fm.get("source_url",""),
+            url        = post_url(today, p.stem),
+            img_path   = img,
+            idx=i, total=len(posts), kind="خبر"
+        )
 
     for i, b in enumerate(blogs, 1):
         fm = parse_fm(b)
-        if fm: send_blog(fm, i, len(blogs))
+        if not fm: continue
+        img = TMP / f"blog_{i}.png"
+        send_item(
+            title      = fm.get("title",""),
+            category   = fm.get("category",""),
+            severity   = "",
+            cvss       = "",
+            cve        = "",
+            body       = fm.get("_body",""),
+            source_url = "",
+            url        = blog_url(fm.get("slug", b.stem)),
+            img_path   = img,
+            idx=i, total=len(blogs), kind="مقالة"
+        )
 
-    tg(f"✅ <b>انتهى محتوى اليوم</b>\n🔗 {SITE_URL}")
+    tg(f"✅ <b>انتهى محتوى اليوم</b>\n{SITE_URL}")
     print("✅ تم!")
+
 
 if __name__ == "__main__":
     main()
