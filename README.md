@@ -19,8 +19,8 @@
 
 <br>
 
-&nbsp;&nbsp;&nbsp;&nbsp;نحن مجتمع عربي متخصص في الأمن الهجومي.
-
+&nbsp;&nbsp;&nbsp;&nbspن
+https://malekalthubiany.github.io/OffsecAR
 <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;هدفنا بسيط — نجمع كل ما يستحق القراءة في مجال Offensive Security ونقدمه بالعربي يومياً.
