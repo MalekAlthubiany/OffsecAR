@@ -4,13 +4,11 @@
 # OffsecAR
 
 <br>
-
 <img src="https://img.shields.io/badge/Daily-Updated-e03c2a?style=flat-square&labelColor=0d0d0d" />
 &nbsp;
 <img src="https://img.shields.io/badge/Content-Arabic-0d0d0d?style=flat-square&labelColor=111111&color=222222" />
 &nbsp;
 <img src="https://img.shields.io/badge/Offensive-Security-e03c2a?style=flat-square&labelColor=0d0d0d" />
-
 <br><br>
 
 </div>
@@ -19,8 +17,8 @@
 
 <br>
 
-&nbsp;&nbsp;&nbsp;&nbspن
-https://malekalthubiany.github.io/OffsecAR
+&nbsp;&nbsp;&nbsp;&nbsp;🔗 https://malekalthubiany.github.io/OffsecAR
+
 <br>
 
 &nbsp;&nbsp;&nbsp;&nbsp;هدفنا بسيط — نجمع كل ما يستحق القراءة في مجال Offensive Security ونقدمه بالعربي يومياً.
@@ -33,7 +31,3 @@ https://malekalthubiany.github.io/OffsecAR
 <br>
 
 ---
-
-<br>
-
-<div
